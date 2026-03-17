@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-mongoose.connect('mongodb+srv://ashokj23cse_db_user:Eia29gfsPMYeLIdN@cluster0.fs5onst.mongodb.net/?appName=Cluster0')
+mongoose.connect('')
     .then(async () => {
         const db = require('./models/Inventory');
         const count = await db.countDocuments();
