@@ -71,6 +71,22 @@
 .sidebar-nav {
   flex: 1;
   padding: 1.5rem 0;
+  overflow-y: auto;
+}
+
+/* ── Custom sidebar scrollbar ── */
+.sidebar-nav::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .nav-item {
@@ -327,6 +343,46 @@
 
 .logout-item:hover {
   background: #fff5f5;
+}
+
+/* ── Nav section labels & badges ── */
+.nav-section-label {
+  padding: 12px 18px 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  user-select: none;
+}
+.nav-divider-collapsed {
+  height: 1px;
+  background: rgba(255,255,255,0.12);
+  margin: 8px 16px;
+}
+.nav-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 1.5px solid #1e3a5f;
 }
 
 @media (max-width: 768px) {

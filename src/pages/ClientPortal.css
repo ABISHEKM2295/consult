@@ -1,0 +1,94 @@
+.client-portal {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f1e3d 0%, #1e3a5f 50%, #2d5980 100%);
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Header */
+.client-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 32px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.client-brand { display: flex; align-items: center; gap: 16px; }
+.client-logo  {
+  width: 48px; height: 48px; background: linear-gradient(135deg,#3b82f6,#6366f1);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 900; font-size: 15px;
+}
+.client-brand h2 { margin: 0; color: #fff; font-size: 18px; font-weight: 700; }
+.client-brand p  { margin: 3px 0 0; color: #93c5fd; font-size: 13px; }
+.client-header-right { display: flex; gap: 10px; align-items: center; }
+.client-refresh-btn  {
+  padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px; color: white; cursor: pointer; display: flex; align-items: center;
+}
+.client-logout-btn {
+  display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+  background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 8px; color: #fca5a5; cursor: pointer; font-size: 13px; font-weight: 600;
+}
+
+/* Body */
+.client-body { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+/* Summary KPIs */
+.client-summary {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 32px;
+}
+.client-kpi {
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 20px; text-align: center;
+  backdrop-filter: blur(10px);
+}
+.client-kpi h3 { margin: 0 0 4px; font-size: 32px; font-weight: 700; }
+.client-kpi p  { margin: 0; color: rgba(255,255,255,0.6); font-size: 13px; }
+
+.client-section-title { color: rgba(255,255,255,0.9); font-size: 16px; font-weight: 700; margin: 0 0 16px; }
+.client-error   { color: #fca5a5; background: rgba(239,68,68,0.1); padding: 12px 16px; border-radius:8px; margin-bottom:16px; }
+.client-skeleton{
+  height: 160px; background: rgba(255,255,255,0.06); border-radius:12px; margin-bottom:12px;
+  animation: shimmer 1.5s infinite;
+  background: linear-gradient(90deg,rgba(255,255,255,0.05) 25%,rgba(255,255,255,0.1) 50%,rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+}
+.client-empty { text-align:center; padding:60px; color:rgba(255,255,255,0.4); }
+.client-empty svg { margin-bottom:12px; opacity:0.4; }
+
+/* Order cards */
+.client-orders-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+.client-order-card {
+  background: rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12);
+  border-radius: 14px; padding: 20px; backdrop-filter:blur(10px);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.client-order-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+.client-order-card.overdue   { border-color:rgba(239,68,68,0.5); background:rgba(239,68,68,0.06); }
+.client-order-card.delivered { border-color:rgba(16,185,129,0.4); }
+
+.client-order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.client-order-no  { font-size:12px; font-weight:700; color:#93c5fd; font-family:monospace; }
+.client-overdue   { font-size:10px; font-weight:700; color:#ef4444; background:rgba(239,68,68,0.15); padding:3px 8px; border-radius:99px; }
+.client-done      { font-size:10px; font-weight:700; color:#10b981; }
+.client-color     { margin:0 0 10px; font-size:16px; font-weight:700; color:#fff; }
+.client-order-meta{ display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:rgba(255,255,255,0.6); margin-bottom:12px; }
+.client-stage-badge {
+  display:inline-block; padding:4px 10px; background:rgba(99,102,241,0.2);
+  color:#a5b4fc; border-radius:99px; font-size:11px; font-weight:600; margin-bottom:12px;
+}
+
+/* Progress */
+.client-progress-wrap { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.client-progress-bar  { flex:1; height:6px; background:rgba(255,255,255,0.1); border-radius:99px; overflow:hidden; }
+.client-progress-fill { height:100%; border-radius:99px; transition:width 0.5s ease; }
+.client-progress-pct  { font-size:11px; color:rgba(255,255,255,0.5); width:32px; text-align:right; }
+
+.client-download-btn {
+  display:flex; align-items:center; gap:6px; padding:8px 14px;
+  background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3);
+  border-radius:8px; color:#6ee7b7; font-size:12px; font-weight:600;
+  text-decoration:none; transition:background 0.2s;
+}
+.client-download-btn:hover { background:rgba(16,185,129,0.25); }
+
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@media(max-width:768px) { .client-summary{grid-template-columns:repeat(2,1fr);} .client-header{flex-direction:column;gap:12px;} }

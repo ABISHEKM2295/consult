@@ -1,14 +1,4 @@
 {
-<<<<<<< HEAD
-  "name": "consultancy-main",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "concurrently \"npm --prefix backend start\" \"npm --prefix premeir_textile_dyers start\""
-  },
-  "devDependencies": {
-    "concurrently": "^8.0.1"
-=======
   "name": "premier-textile-dyers-dashboard",
   "version": "1.0.0",
   "private": true,
@@ -42,6 +32,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
->>>>>>> c26b2ae52d230ca1d399049f3d754c7e027a1209
   }
 }

@@ -1,0 +1,64 @@
+.labdip-page { animation: fadeIn 0.3s ease; }
+
+.labdip-filters { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.labdip-filters label { font-size:13px; font-weight:600; color:#374151; }
+.labdip-filters select { padding:8px 12px; border:1.5px solid #e5e7eb; border-radius:8px; font-size:13px; }
+
+.labdip-empty { text-align:center; padding:60px 20px; color:#9ca3af; }
+.labdip-empty svg { margin-bottom:12px; opacity:0.4; }
+
+.labdip-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+
+.labdip-card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 4px rgba(0,0,0,0.07); border:1px solid #f1f5f9; transition:box-shadow 0.15s; }
+.labdip-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.1); }
+.labdip-card.locked { border-color:#1e3a5f; background:linear-gradient(135deg,#f8faff,#fff); }
+
+.labdip-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.labdip-order-no    { font-size:13px; font-weight:700; color:#1e3a5f; font-family:monospace; }
+.labdip-attempt     { font-size:11px; color:#9ca3af; display:block; margin-top:2px; }
+.labdip-status      { font-size:11px; font-weight:700; }
+
+/* Swatches */
+.labdip-swatches { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.swatch-pair     { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.swatch-pair span{ font-size:10px; color:#9ca3af; }
+.color-swatch    { width:48px; height:48px; border-radius:10px; border:2px solid rgba(0,0,0,0.08); }
+.swatch-arrow    { font-size:20px; color:#d1d5db; }
+
+/* ΔE */
+.labdip-delta { font-size:12px; font-weight:600; padding:6px 10px; border-radius:6px; margin-bottom:10px; }
+.delta-pass   { background:#f0fdf4; color:#10b981; }
+.delta-fail   { background:#fef2f2; color:#ef4444; }
+
+/* Recipe chips */
+.labdip-recipe-summary { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px; }
+.recipe-chip { background:#f3f4f6; color:#374151; font-size:10px; padding:3px 8px; border-radius:12px; }
+
+.labdip-feedback { font-size:12px; color:#6366f1; margin:4px 0 8px; font-style:italic; }
+
+/* Actions */
+.labdip-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.action-btn-lab { display:flex; align-items:center; gap:5px; padding:7px 12px; border:none; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; transition:opacity 0.15s; }
+.action-btn-lab.approve { background:#f0fdf4; color:#10b981; }
+.action-btn-lab.reject  { background:#fef2f2; color:#ef4444; }
+.action-btn-lab.lock    { background:#1e3a5f; color:#fff; }
+.action-btn-lab:hover   { opacity:0.85; }
+.locked-badge { font-size:12px; font-weight:700; color:#1e3a5f; }
+
+/* Status badge helpers */
+.lab-pending  { color:#f59e0b; }
+.lab-review   { color:#6366f1; }
+.lab-approved { color:#10b981; }
+.lab-rejected { color:#ef4444; }
+.lab-locked   { color:#1e3a5f; }
+
+/* Modal */
+.labdip-modal { background:#fff; border-radius:16px; width:90%; max-width:600px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+.labdip-form  { padding:20px 24px; display:flex; flex-direction:column; gap:14px; }
+.labdip-section-title { font-size:12px; font-weight:700; color:#1e3a5f; margin:4px 0; }
+.labdip-lab-section   { background:#f8fafc; border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:8px; }
+.lab-inputs { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.labdip-live-delta { font-size:13px; font-weight:600; color:#6366f1; display:flex; align-items:center; gap:12px; }
+.swatch-preview { display:flex; align-items:center; gap:8px; }
+
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }

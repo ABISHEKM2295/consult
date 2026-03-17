@@ -1,220 +1,312 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Plus, Search, TrendingDown } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ResponsiveContainer
+} from 'recharts';
+import { Plus, Search, RefreshCw, AlertTriangle, FlaskConical, X } from 'lucide-react';
+import { api } from '../api';
 import './DyesChemicals.css';
 
+const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri'];
+const DAY_LABELS = { sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri' };
+
+/* build weekly chart from inventory weekly usage data */
+const buildWeeklyChart = (items) => {
+  return DAYS.map(day => ({
+    day: DAY_LABELS[day],
+    dyes:      items.filter(i => i.category === 'Dye').reduce((s, i) => s + (i.weeklyUsage?.[day] || 0), 0),
+    chemicals: items.filter(i => i.category === 'Chemical').reduce((s, i) => s + (i.weeklyUsage?.[day] || 0), 0),
+  }));
+};
+
 const DyesChemicals = () => {
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab]     = useState('all');
+  const [search, setSearch]           = useState('');
+  const [items, setItems]             = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
-  const weeklyUsageData = [
-    { day: 'Sun', dyes: 7200, chemicals: 3800 },
-    { day: 'Mon', day: 'Mon', dyes: 8900, chemicals: 3400 },
-    { day: 'Tue', dyes: 9300, chemicals: 3200 },
-    { day: 'Wed', dyes: 9100, chemicals: 3400 },
-    { day: 'Thu', dyes: 14200, chemicals: 2800 },
-    { day: 'Fri', dyes: 9200, chemicals: 2900 }
-  ];
+  // Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItem, setNewItem] = useState({ name: '', category: 'Dye', stock: 0, costPerKg: 15.0 });
+  const [modalSubmitting, setModalSubmitting] = useState(false);
 
-  const inventoryItems = [
-    { name: 'BLACK B (SF) Divine', category: 'Dye', sun: 3930, mon: 3165, tue: 3640, wed: 3415, thu: 3389, fri: 3815, stock: 617, status: 'ok', stockLevel: 100 },
-    { name: 'DEEP BLACK', category: 'Dye', sun: 384, mon: 3184, tue: 3184, wed: 3134, thu: 8134, fri: 3134, stock: 50, status: 'low', stockLevel: 25 },
-    { name: 'RED W3R (Divine)', category: 'Dye', sun: 1205, mon: 1158, tue: 1127, wed: 1101, thu: 1098, fri: 1081, stock: 148, status: 'critical', stockLevel: 69 },
-    { name: 'RED F3B (Divine)', category: 'Dye', sun: 26, mon: 30, tue: 30, wed: 237, thu: 227, fri: 194, stock: 106, status: 'critical', stockLevel: 71 },
-    { name: 'ORANGE W3R (Divine)', category: 'Dye', sun: 1120, mon: 1085, tue: 1035, wed: 1035, thu: 998, fri: 987, stock: 155, status: 'critical', stockLevel: 78 },
-    { name: 'YELLOW ME49L (Divine)', category: 'Dye', sun: 114, mon: 14, tue: 147, wed: 108, thu: 108, fri: 108, stock: 5, status: 'critical', stockLevel: 10 },
-    { name: 'BLUE RR (Divine)', category: 'Dye', sun: 370, mon: 370, tue: 370, wed: 370, thu: 356, fri: 356, stock: 19, status: 'critical', stockLevel: 19 },
-    { name: 'RED RR (Divine)', category: 'Dye', sun: 120, mon: 120, tue: 120, wed: 145, thu: 109, fri: 103, stock: 13, status: 'critical', stockLevel: 13 },
-    { name: 'Wetting Oil - BMW/CFLD', category: 'Chemical', sun: 1613, mon: 1500, tue: 1448, wed: 1389, thu: 1347, fri: 1386, stock: 288, status: 'critical', stockLevel: 72 },
-    { name: 'Soaping Oil - OL 40', category: 'Chemical', sun: 1521, mon: 1428, tue: 1341, wed: 1293, thu: 1259, fri: 1224, stock: 321, status: 'critical', stockLevel: 80 },
-    { name: 'Peroxide Killer Levocol NZCK', category: 'Chemical', sun: 411, mon: 406, tue: 406, wed: 406, thu: 397, fri: 396, stock: 15, status: 'critical', stockLevel: 15 },
-    { name: 'Softner Cakes (1:15)', category: 'Chemical', sun: 125, mon: 100, tue: 100, wed: 100, thu: 75, fri: 75, stock: 75, status: 'critical', stockLevel: 75 }
-  ];
+  const fetchInventory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getInventory();
+      setItems(data);
+      setLastRefresh(new Date());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const filteredItems = inventoryItems.filter(item => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'dyes') return item.category === 'Dye';
-    if (activeTab === 'chemicals') return item.category === 'Chemical';
-    return true;
+  useEffect(() => {
+    fetchInventory();
+    const interval = setInterval(fetchInventory, 120000);
+    return () => clearInterval(interval);
+  }, [fetchInventory]);
+
+  /* ── derived data ── */
+  const weeklyData    = buildWeeklyChart(items);
+  const totalItems    = items.length;
+  const dyesCount     = items.filter(i => i.category === 'Dye').length;
+  const chemCount     = items.filter(i => i.category === 'Chemical').length;
+  const lowStockCount = items.filter(i => i.status !== 'ok').length;
+
+  const filteredItems = items.filter(item => {
+    const matchTab    = activeTab === 'all' || item.category.toLowerCase() === activeTab.slice(0, -1);
+    const matchSearch = !search || item.name.toLowerCase().includes(search.toLowerCase());
+    return matchTab && matchSearch;
   });
 
-  const getStatusClass = (status) => {
-    switch(status) {
-      case 'ok': return 'status-ok';
-      case 'low': return 'status-low';
-      case 'critical': return 'status-critical';
-      default: return '';
+  const getStatusClass = (s) => s === 'ok' ? 'status-ok' : s === 'low' ? 'status-low' : 'status-critical';
+  const getStatusText  = (s, lvl) => s === 'ok' ? 'OK' : `🔻 ${lvl}%`;
+
+  /* ── sort: critical first, then low, then ok ── */
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const order = { critical: 0, low: 1, ok: 2 };
+    return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+  });
+
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    setModalSubmitting(true);
+    try {
+      // The API call to add to inventory
+      await api.createInventoryItem(newItem);
+      setShowAddModal(false);
+      setNewItem({ name: '', category: 'Dye', stock: 0, costPerKg: 15.0 });
+      fetchInventory(); // refresh list
+    } catch (err) {
+      alert(err.message || 'Error creating item');
+    } finally {
+      setModalSubmitting(false);
     }
   };
 
-  const getStatusText = (status, stockLevel) => {
-    if (status === 'ok') return 'OK';
-    if (status === 'low') return `🔻 ${stockLevel}%`;
-    if (status === 'critical') return `🔻 ${stockLevel}%`;
-    return '';
-  };
-
-  const totalItems = inventoryItems.length;
-  const dyesCount = inventoryItems.filter(i => i.category === 'Dye').length;
-  const chemicalsCount = inventoryItems.filter(i => i.category === 'Chemical').length;
-  const lowStockCount = inventoryItems.filter(i => i.status !== 'ok').length;
-
   return (
     <div className="dyes-chemicals">
+      {/* Header */}
       <div className="page-header">
         <div>
-          <h1>Dyes & Chemicals Inventory</h1>
-          <p className="page-subtitle">Weekly usage tracking and stock management</p>
+          <h1>Dyes &amp; Chemicals Inventory</h1>
+          <p className="page-subtitle">
+            Weekly usage tracking and live stock management
+            {lastRefresh && <span style={{ color: '#9ca3af' }}> · Updated {lastRefresh.toLocaleTimeString()}</span>}
+          </p>
         </div>
-        <button className="add-item-button">
-          <Plus size={20} />
-          Add Item
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="refresh-btn-dc" onClick={fetchInventory} disabled={loading}>
+            <RefreshCw size={16} className={loading ? 'spin' : ''} />
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+          <button className="add-item-button" onClick={() => setShowAddModal(true)}>
+            <Plus size={20} /> Add Item
+          </button>
+        </div>
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="error-banner-dc">
+          <AlertTriangle size={18} /> {error}
+          <button className="retry-link-dc" onClick={fetchInventory}>Retry</button>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="inventory-summary">
-        <div className="summary-card">
-          <div className="summary-icon purple">
-            <span>📦</span>
+        {[
+          { label: 'Total Items',   value: loading ? '—' : totalItems,    icon: '📦', cls: 'purple' },
+          { label: 'Dyes',          value: loading ? '—' : dyesCount,     icon: '💜', cls: 'pink' },
+          { label: 'Chemicals',     value: loading ? '—' : chemCount,     icon: '🔵', cls: 'blue' },
+          { label: 'Low/Critical',  value: loading ? '—' : lowStockCount, icon: '⚠️', cls: 'orange' },
+        ].map(c => (
+          <div className="summary-card" key={c.label}>
+            <div className={`summary-icon ${c.cls}`}><span>{c.icon}</span></div>
+            <div className="summary-info">
+              <p className="summary-label">{c.label}</p>
+              <h3 className="summary-value">{c.value}</h3>
+            </div>
           </div>
-          <div className="summary-info">
-            <p className="summary-label">Total Items</p>
-            <h3 className="summary-value">{totalItems}</h3>
-          </div>
-        </div>
-
-        <div className="summary-card">
-          <div className="summary-icon pink">
-            <span>💜</span>
-          </div>
-          <div className="summary-info">
-            <p className="summary-label">Dyes</p>
-            <h3 className="summary-value">{dyesCount}</h3>
-          </div>
-        </div>
-
-        <div className="summary-card">
-          <div className="summary-icon blue">
-            <span>🔵</span>
-          </div>
-          <div className="summary-info">
-            <p className="summary-label">Chemicals</p>
-            <h3 className="summary-value">{chemicalsCount}</h3>
-          </div>
-        </div>
-
-        <div className="summary-card">
-          <div className="summary-icon orange">
-            <span>⚠️</span>
-          </div>
-          <div className="summary-info">
-            <p className="summary-label">Low Stock</p>
-            <h3 className="summary-value">{lowStockCount}</h3>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Weekly Usage Chart */}
+      {/* Weekly Usage Chart — derived live from inventory weeklyUsage fields */}
       <div className="chart-section">
         <div className="chart-header">
           <h3>Weekly Usage Trend</h3>
+          <p className="chart-sub">Cumulative grams used per category per day</p>
         </div>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={weeklyUsageData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="day" stroke="#64748b" />
-            <YAxis stroke="#64748b" />
-            <Tooltip 
-              contentStyle={{
-                background: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px'
-              }}
-            />
-            <Legend />
-            <Bar dataKey="dyes" fill="#a855f7" name="Dyes" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="chemicals" fill="#3b82f6" name="Chemicals" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {loading ? (
+          <div className="chart-skeleton-dc" />
+        ) : (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={weeklyData} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="day" stroke="#64748b" tick={{ fontSize: 12 }} />
+              <YAxis stroke="#64748b" tick={{ fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                formatter={(v, n) => [v.toLocaleString() + ' g', n]}
+              />
+              <Legend iconType="circle" iconSize={10} />
+              <Bar dataKey="dyes"      fill="#a855f7" name="Dyes"      radius={[4,4,0,0]} />
+              <Bar dataKey="chemicals" fill="#3b82f6" name="Chemicals" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Inventory Table */}
       <div className="inventory-table-section">
         <div className="table-controls">
           <div className="tabs">
-            <button 
-              className={`tab ${activeTab === 'all' ? 'active' : ''}`}
-              onClick={() => setActiveTab('all')}
-            >
-              All Items
-            </button>
-            <button 
-              className={`tab ${activeTab === 'dyes' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dyes')}
-            >
-              Dyes
-            </button>
-            <button 
-              className={`tab ${activeTab === 'chemicals' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chemicals')}
-            >
-              Chemicals
-            </button>
+            {['all','dyes','chemicals'].map(t => (
+              <button
+                key={t}
+                className={`tab ${activeTab === t ? 'active' : ''}`}
+                onClick={() => setActiveTab(t)}
+              >
+                {t === 'all' ? 'All Items' : t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
           </div>
-
           <div className="search-box">
             <Search size={18} />
-            <input type="text" placeholder="Search items..." />
+            <input
+              type="text"
+              placeholder="Search items…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
         <div className="table-wrapper">
-          <table className="inventory-table">
-            <thead>
-              <tr>
-                <th>Item Name</th>
-                <th>Category</th>
-                <th>Sun</th>
-                <th>Mon</th>
-                <th>Tue</th>
-                <th>Wed</th>
-                <th>Thu</th>
-                <th>Fri</th>
-                <th>Stock</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map((item, index) => (
-                <tr key={index}>
-                  <td className="item-name">{item.name}</td>
-                  <td>
-                    <span className={`category-badge ${item.category.toLowerCase()}`}>
-                      {item.category}
-                    </span>
-                  </td>
-                  <td>{item.sun.toLocaleString()}</td>
-                  <td>{item.mon.toLocaleString()}</td>
-                  <td>{item.tue.toLocaleString()}</td>
-                  <td>{item.wed.toLocaleString()}</td>
-                  <td>{item.thu.toLocaleString()}</td>
-                  <td>{item.fri.toLocaleString()}</td>
-                  <td className="stock-cell">
-                    <span className={getStatusClass(item.status)}>
-                      {item.stock} kg
-                    </span>
-                  </td>
-                  <td className="status-cell">
-                    <span className={`status-indicator ${getStatusClass(item.status)}`}>
-                      {getStatusText(item.status, item.stockLevel)}
-                    </span>
-                  </td>
-                </tr>
+          {loading ? (
+            <div style={{ padding: 24 }}>
+              {[1,2,3,4,5].map(k => (
+                <div key={k} style={{ height: 44, marginBottom: 8, background: 'linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite', borderRadius: 8 }} />
               ))}
-            </tbody>
-          </table>
+            </div>
+          ) : sortedItems.length === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', color: '#9ca3af' }}>
+              <FlaskConical size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
+              <p>No items found{search ? ` matching "${search}"` : ''}.</p>
+            </div>
+          ) : (
+            <table className="inventory-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Category</th>
+                  <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedItems.map((item) => (
+                  <tr key={item._id} className={item.status === 'critical' ? 'row-critical' : item.status === 'low' ? 'row-low' : ''}>
+                    <td className="item-name">{item.name}</td>
+                    <td>
+                      <span className={`category-badge ${item.category.toLowerCase()}`}>{item.category}</span>
+                    </td>
+                    {DAYS.map(d => (
+                      <td key={d}>{(item.weeklyUsage?.[d] || 0).toLocaleString()}</td>
+                    ))}
+                    <td className="stock-cell">
+                      <span className={getStatusClass(item.status)}>{item.stock} kg</span>
+                    </td>
+                    <td className="status-cell">
+                      <span className={`status-indicator ${getStatusClass(item.status)}`}>
+                        {getStatusText(item.status, item.stockLevel)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      {/* Add Item Modal */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="dc-modal" onClick={e => e.stopPropagation()}>
+            <div className="dc-modal-header">
+              <h2>Add New Inventory Item</h2>
+              <button className="close-btn" onClick={() => setShowAddModal(false)}>
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleAddItem} className="dc-modal-form">
+              <div className="form-group">
+                <label>Item Name</label>
+                <input 
+                  type="text" 
+                  value={newItem.name} 
+                  onChange={e => setNewItem({...newItem, name: e.target.value})} 
+                  placeholder="e.g. Reactive Yellow"
+                  required 
+                />
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Category</label>
+                  <select 
+                    value={newItem.category} 
+                    onChange={e => setNewItem({...newItem, category: e.target.value})}
+                  >
+                    <option value="Dye">Dye</option>
+                    <option value="Chemical">Chemical</option>
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label>Initial Stock (kg)</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    step="0.01"
+                    value={newItem.stock} 
+                    onChange={e => setNewItem({...newItem, stock: parseFloat(e.target.value)})} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Cost per kg (USD)</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  step="0.01"
+                  value={newItem.costPerKg} 
+                  onChange={e => setNewItem({...newItem, costPerKg: parseFloat(e.target.value)})} 
+                  required 
+                />
+              </div>
+
+              <div className="dc-modal-footer">
+                <button type="button" className="cancel-btn" onClick={() => setShowAddModal(false)}>Cancel</button>
+                <button type="submit" className="save-btn" disabled={modalSubmitting}>
+                  {modalSubmitting ? 'Saving...' : 'Add Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

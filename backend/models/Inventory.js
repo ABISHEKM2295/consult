@@ -40,6 +40,10 @@ const inventorySchema = new mongoose.Schema({
     stockLevel: {
         type: Number,
         default: 100
+    },
+    costPerKg: {
+        type: Number,
+        default: 15.0 // Base default cost
     }
 }, {
     timestamps: true

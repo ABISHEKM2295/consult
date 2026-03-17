@@ -47,6 +47,10 @@ const machineSchema = new mongoose.Schema({
     },
     startTime: {
         type: Date
+    },
+    hourlyUtilityCost: {
+        type: Number,
+        default: 50.0 // Base default cost for power/steam/water per hour
     }
 }, {
     timestamps: true

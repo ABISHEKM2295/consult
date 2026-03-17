@@ -8,23 +8,44 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(''); setLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    // Simple authentication logic (replace with actual API call in production)
-    if (username === 'admin' && password === 'admin123') {
-      onLogin();
-      navigate('/');
-    } else if (username === 'operator' && password === 'operator123') {
-      onLogin();
-      navigate('/');
-    } else {
-      setError('Invalid username or password');
+      // Try to parse JSON response
+      let data;
+      try { data = await res.json(); } catch { data = {}; }
+
+      if (!res.ok) {
+        // data.error might be a string or a nested { message, status } object
+        const errMsg = typeof data.error === 'string'
+          ? data.error
+          : data.error?.message || data.message || 'Login failed';
+        throw new Error(errMsg);
+      }
+
+      onLogin(data);
+      navigate(data.role === 'client' ? '/client-portal' : '/');
+    } catch (err) {
+      // Network error (backend not running) gives "Failed to fetch"
+      const msg = err.message === 'Failed to fetch'
+        ? 'Cannot connect to server. Make sure the backend is running.'
+        : (err.message || 'Invalid username or password');
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
   };
+
 
   return (
     <div className="login-container">
@@ -81,8 +102,8 @@ function Login({ onLogin }) {
 
           {error && <div className="error-message">{error}</div>}
 
-          <button type="submit" className="login-button">
-            Sign In
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign In'}
           </button>
 
           <div className="login-footer">

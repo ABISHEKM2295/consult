@@ -1,441 +1,304 @@
-import React, { useState } from 'react';
-import { Activity, Clock, Plus, X } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Activity, Clock, Plus, X, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { api } from '../api';
 import './MachineData.css';
 
+const STAGES = ['TD Load', 'Dyeing', 'Soap Run', 'Soap Steam', 'Unload'];
+
+const statusMap = {
+  running:     { label: 'Running',     cls: 'status-running' },
+  idle:        { label: 'Idle',        cls: 'status-idle' },
+  maintenance: { label: 'Maintenance', cls: 'status-maintenance' },
+};
+
+/* ══ small skeleton ═══════════════════════════════════════════ */
+const CardSkeleton = () => (
+  <div className="machine-card skeleton-card-m">
+    <div className="sk-line short" /><div className="sk-line tall" /><div className="sk-line" /><div className="sk-line" />
+  </div>
+);
+
+/* ══ MAIN COMPONENT ═══════════════════════════════════════════ */
 const MachineData = () => {
-  const [showAddJobModal, setShowAddJobModal] = useState(false);
-  const [newlyAddedMachine, setNewlyAddedMachine] = useState(null);
-  const [formData, setFormData] = useState({
-    machine: '',
-    party: '',
-    color: '',
-    lotNo: '',
-    quantity: '',
-    stage: 'TD Load',
-    expectedDuration: ''
+  const [machines, setMachines]       = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
+  const [showModal, setShowModal]     = useState(false);
+  const [completing, setCompleting]   = useState(null);
+  const [newlyAdded, setNewlyAdded]   = useState(null);
+  const [lastRefresh, setLastRefresh] = useState(null);
+
+  const [form, setForm] = useState({
+    machineId: '', party: '', color: '', lotNo: '',
+    quantity: '', stage: 'TD Load', expectedDuration: ''
   });
 
-  const [machines, setMachines] = useState([
-    {
-      id: 'SF-01',
-      name: 'Softflow 1',
-      status: 'running',
-      party: 'LUX',
-      color: 'Navy',
-      lotNo: '2384/2385',
-      quantity: '331 kg',
-      stage: 'Soap Run',
-      efficiency: 94,
-      runtime: '5h 32m'
-    },
-    {
-      id: 'SF-02',
-      name: 'Softflow 2',
-      status: 'running',
-      party: 'JG',
-      color: 'Petrol Blue',
-      lotNo: '002',
-      quantity: '504 kg',
-      stage: 'TD Load',
-      efficiency: 88,
-      runtime: '3h 15m'
-    },
-    {
-      id: 'SF-03',
-      name: 'Softflow 3',
-      status: 'running',
-      party: 'Modenik',
-      color: 'Olive',
-      lotNo: '13141/13142/13143',
-      quantity: '505 kg',
-      stage: 'Soap Steam',
-      efficiency: 91,
-      runtime: '6h 20m'
-    },
-    {
-      id: 'SF-04',
-      name: 'Softflow 4',
-      status: 'running',
-      party: 'Modenik',
-      color: 'Poseidon',
-      lotNo: '13141/5',
-      quantity: '141 kg',
-      stage: 'Soap Run',
-      efficiency: 85,
-      runtime: '7h 48m'
-    },
-    {
-      id: 'SF-05',
-      name: 'Softflow 5',
-      status: 'running',
-      party: 'Modenik',
-      color: 'Olive',
-      lotNo: '13414/5',
-      quantity: '514 kg',
-      stage: 'Unload',
-      efficiency: 92,
-      runtime: '2h 10m'
-    },
-    {
-      id: 'SF-06',
-      name: 'Softflow 6',
-      status: 'idle',
-      party: '',
-      color: '',
-      lotNo: '',
-      quantity: '',
-      stage: '',
-      efficiency: 0,
-      runtime: ''
-    },
-    {
-      id: 'SF-07',
-      name: 'Softflow 7',
-      status: 'running',
-      party: 'Modenik',
-      color: 'C. Brown',
-      lotNo: '112',
-      quantity: '507 kg',
-      stage: 'Soap Run',
-      efficiency: 89,
-      runtime: '4h 25m'
-    },
-    {
-      id: 'SF-08',
-      name: 'Softflow 8',
-      status: 'maintenance',
-      party: '',
-      color: '',
-      lotNo: '',
-      quantity: '',
-      stage: '',
-      efficiency: 0,
-      runtime: ''
+  /* ── fetch all machines from DB ── */
+  const fetchMachines = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getMachines();
+      setMachines(data);
+      setLastRefresh(new Date());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  }, []);
 
-  const runningMachines = machines.filter(m => m.status === 'running').length;
-  const totalMachines = machines.length;
-  const avgEfficiency = Math.round(
-    machines.filter(m => m.status === 'running')
-      .reduce((sum, m) => sum + m.efficiency, 0) / runningMachines
-  );
-  const totalProduction = machines.filter(m => m.status === 'running')
-    .reduce((sum, m) => sum + parseInt(m.quantity), 0);
+  useEffect(() => {
+    fetchMachines();
+    const interval = setInterval(fetchMachines, 60000); // auto-refresh every 60s
+    return () => clearInterval(interval);
+  }, [fetchMachines]);
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'running': return 'status-running';
-      case 'idle': return 'status-idle';
-      case 'maintenance': return 'status-maintenance';
-      default: return '';
-    }
-  };
+  /* ── derived stats (from live data, same source as dashboard) ── */
+  const runningMachines  = machines.filter(m => m.status === 'running');
+  const runningCount     = runningMachines.length;
+  const totalCount       = machines.length;
+  const avgEfficiency    = runningCount > 0
+    ? Math.round(runningMachines.reduce((s, m) => s + m.efficiency, 0) / runningCount)
+    : 0;
+  const totalProduction  = runningMachines.reduce((s, m) => s + (parseFloat(m.quantity) || 0), 0);
 
-  const getStatusLabel = (status) => {
-    switch(status) {
-      case 'running': return 'Running';
-      case 'idle': return 'Idle';
-      case 'maintenance': return 'Maintenance';
-      default: return status;
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  /* ── add job → PUT /api/machines/:id/job ── */
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Update the machine with the new job
-    setMachines(prevMachines => 
-      prevMachines.map(machine => 
-        machine.id === formData.machine
-          ? {
-              ...machine,
-              status: 'running',
-              party: formData.party,
-              color: formData.color,
-              lotNo: formData.lotNo,
-              quantity: `${formData.quantity} kg`,
-              stage: formData.stage,
-              efficiency: 0, // Will be calculated as job progresses
-              runtime: 'Just started'
-            }
-          : machine
-      )
-    );
-    
-    // Highlight the newly added machine
-    setNewlyAddedMachine(formData.machine);
-    setTimeout(() => setNewlyAddedMachine(null), 3000); // Remove highlight after 3 seconds
-    
-    alert(`Job added successfully to ${formData.machine}!\n\nThe machine card will now display:\n- Party: ${formData.party}\n- Color: ${formData.color}\n- Lot: ${formData.lotNo}\n- Quantity: ${formData.quantity} kg`);
-    
-    setShowAddJobModal(false);
-    
-    // Reset form
-    setFormData({
-      machine: '',
-      party: '',
-      color: '',
-      lotNo: '',
-      quantity: '',
-      stage: 'TD Load',
-      expectedDuration: ''
-    });
+    const target = machines.find(m => m._id === form.machineId);
+    if (!target) return;
+    try {
+      const updated = await fetch(`http://localhost:5000/api/machines/${form.machineId}/job`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          party: form.party,
+          color: form.color,
+          lotNo: form.lotNo,
+          quantity: form.quantity,
+          stage: form.stage,
+        }),
+      }).then(r => r.json());
+      setMachines(prev => prev.map(m => m._id === updated._id ? updated : m));
+      setNewlyAdded(updated._id);
+      setTimeout(() => setNewlyAdded(null), 3000);
+      setShowModal(false);
+      setForm({ machineId: '', party: '', color: '', lotNo: '', quantity: '', stage: 'TD Load', expectedDuration: '' });
+    } catch (e) {
+      alert('Failed to assign job: ' + e.message);
+    }
   };
 
-  const availableMachines = machines.filter(m => m.status === 'idle' || m.status === 'maintenance');
+  /* ── complete job → PUT /api/machines/:id/complete ── */
+  const handleComplete = async (machineId) => {
+    setCompleting(machineId);
+    try {
+      const updated = await fetch(`http://localhost:5000/api/machines/${machineId}/complete`, {
+        method: 'PUT',
+      }).then(r => r.json());
+      setMachines(prev => prev.map(m => m._id === updated._id ? updated : m));
+    } catch (e) {
+      alert('Failed to complete job: ' + e.message);
+    } finally {
+      setCompleting(null);
+    }
+  };
 
+  const availableMachines = machines.filter(m => m.status !== 'running');
+
+  /* ══ RENDER ════════════════════════════════════════════════ */
   return (
     <div className="machine-data">
+      {/* Header */}
       <div className="page-header">
         <div>
           <h1>Machine Running Data</h1>
-          <p className="page-subtitle">Real-time production monitoring and machine status</p>
+          <p className="page-subtitle">
+            Real-time production monitoring
+            {lastRefresh && <span className="last-refresh"> · Updated {lastRefresh.toLocaleTimeString()}</span>}
+          </p>
         </div>
-        <button className="add-job-button" onClick={() => setShowAddJobModal(true)}>
-          <Plus size={20} />
-          Add Job
-        </button>
+        <div className="header-btns">
+          <button className="refresh-btn-m" onClick={fetchMachines} disabled={loading}>
+            <RefreshCw size={16} className={loading ? 'spin' : ''} />
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
+          <button className="add-job-button" onClick={() => setShowModal(true)}>
+            <Plus size={20} /> Add Job
+          </button>
+        </div>
       </div>
 
-      {/* Summary Stats */}
+      {/* Error */}
+      {error && (
+        <div className="error-banner-m">
+          <AlertTriangle size={18} /> Backend error: {error}
+          <button onClick={fetchMachines} className="retry-link">Retry</button>
+        </div>
+      )}
+
+      {/* Stats */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon green">
-            <Activity size={24} />
-          </div>
+          <div className="stat-icon green"><Activity size={24} /></div>
           <div className="stat-info">
             <p className="stat-label">Running</p>
-            <h3 className="stat-value">{runningMachines}/{totalMachines}</h3>
+            <h3 className="stat-value">{loading ? '—' : `${runningCount}/${totalCount}`}</h3>
           </div>
         </div>
-
         <div className="stat-card">
-          <div className="stat-icon blue">
-            <Activity size={24} />
-          </div>
+          <div className="stat-icon blue"><Activity size={24} /></div>
           <div className="stat-info">
             <p className="stat-label">Avg Efficiency</p>
-            <h3 className="stat-value">{avgEfficiency}.8%</h3>
+            <h3 className="stat-value">{loading ? '—' : `${avgEfficiency}%`}</h3>
           </div>
         </div>
-
         <div className="stat-card">
-          <div className="stat-icon orange">
-            <Clock size={24} />
-          </div>
+          <div className="stat-icon orange"><Clock size={24} /></div>
           <div className="stat-info">
             <p className="stat-label">Total Production</p>
-            <h3 className="stat-value">{totalProduction.toLocaleString()} kg</h3>
+            <h3 className="stat-value">{loading ? '—' : `${totalProduction.toLocaleString()} kg`}</h3>
           </div>
         </div>
       </div>
 
-      {/* Machine Cards Grid */}
+      {/* Machine Cards */}
       <div className="machines-grid">
-        {machines.map((machine) => (
-          <div 
-            key={machine.id} 
-            className={`machine-card ${machine.status} ${newlyAddedMachine === machine.id ? 'newly-added' : ''}`}
-          >
-            <div className="machine-header">
-              <div className="machine-id-badge">{machine.id}</div>
-              <span className={`status-badge ${getStatusColor(machine.status)}`}>
-                <span className="status-dot"></span>
-                {getStatusLabel(machine.status)}
-              </span>
-            </div>
+        {loading
+          ? [1,2,3,4,5,6].map(k => <CardSkeleton key={k} />)
+          : machines.length === 0
+            ? <p className="empty-machines">No machines found. Add machines via the backend seed.</p>
+            : machines.map(machine => {
+                const s = statusMap[machine.status] || { label: machine.status, cls: '' };
+                const isNew = newlyAdded === machine._id;
+                return (
+                  <div
+                    key={machine._id}
+                    className={`machine-card ${machine.status} ${isNew ? 'newly-added' : ''}`}
+                  >
+                    <div className="machine-header">
+                      <div className="machine-id-badge">{machine.machineId}</div>
+                      <span className={`status-badge ${s.cls}`}>
+                        <span className="status-dot" />{s.label}
+                      </span>
+                    </div>
 
-            <h3 className="machine-name">{machine.name}</h3>
+                    <h3 className="machine-name">{machine.name}</h3>
 
-            {machine.status === 'running' ? (
-              <>
-                <div className="machine-details">
-                  <div className="detail-row">
-                    <span className="detail-label">Party</span>
-                    <span className="detail-value">{machine.party}</span>
+                    {machine.status === 'running' ? (
+                      <>
+                        <div className="machine-details">
+                          {[
+                            ['Party',    machine.party],
+                            ['Colour',   machine.color],
+                            ['Lot No.',  machine.lotNo],
+                            ['Quantity', machine.quantity ? `${machine.quantity} kg` : '—'],
+                            ['Stage',    machine.stage],
+                          ].map(([label, val]) => (
+                            <div className="detail-row" key={label}>
+                              <span className="detail-label">{label}</span>
+                              {label === 'Stage'
+                                ? <span className="stage-badge">{val}</span>
+                                : <span className="detail-value">{val || '—'}</span>}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="efficiency-section">
+                          <div className="efficiency-header">
+                            <span className="efficiency-label">Efficiency</span>
+                            <span className="efficiency-value">{machine.efficiency}%</span>
+                          </div>
+                          <div className="efficiency-bar">
+                            <div className="efficiency-fill" style={{ width: `${machine.efficiency}%` }} />
+                          </div>
+                          {machine.startTime && (
+                            <div className="runtime">
+                              Started: {new Date(machine.startTime).toLocaleTimeString()}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          className="complete-btn"
+                          onClick={() => handleComplete(machine._id)}
+                          disabled={completing === machine._id}
+                        >
+                          <CheckCircle size={14} />
+                          {completing === machine._id ? 'Completing…' : 'Mark Complete'}
+                        </button>
+                      </>
+                    ) : (
+                      <div className="machine-status-message">
+                        {machine.status === 'idle'
+                          ? <p>No active job</p>
+                          : <p>Under maintenance</p>}
+                      </div>
+                    )}
                   </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Colour</span>
-                    <span className="detail-value">{machine.color}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Lot No.</span>
-                    <span className="detail-value">{machine.lotNo}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Quantity</span>
-                    <span className="detail-value">{machine.quantity}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span className="detail-label">Stage</span>
-                    <span className="stage-badge">{machine.stage}</span>
-                  </div>
-                </div>
-
-                <div className="efficiency-section">
-                  <div className="efficiency-header">
-                    <span className="efficiency-label">Efficiency</span>
-                    <span className="efficiency-value">{machine.efficiency}%</span>
-                  </div>
-                  <div className="efficiency-bar">
-                    <div 
-                      className="efficiency-fill"
-                      style={{ width: `${machine.efficiency}%` }}
-                    ></div>
-                  </div>
-                  <div className="runtime">Runtime: {machine.runtime}</div>
-                </div>
-              </>
-            ) : (
-              <div className="machine-status-message">
-                {machine.status === 'idle' ? (
-                  <p>No active job</p>
-                ) : (
-                  <p>Under maintenance</p>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+                );
+              })
+        }
       </div>
 
       {/* Add Job Modal */}
-      {showAddJobModal && (
-        <div className="modal-overlay" onClick={() => setShowAddJobModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Add New Job</h2>
-              <button className="close-btn" onClick={() => setShowAddJobModal(false)}>
-                <X size={24} />
-              </button>
+              <button className="close-btn" onClick={() => setShowModal(false)}><X size={24} /></button>
             </div>
-
             <form onSubmit={handleSubmit} className="job-form">
               <div className="form-grid">
                 <div className="form-group">
-                  <label htmlFor="machine">Select Machine *</label>
+                  <label htmlFor="machineId">Select Machine *</label>
                   <select
-                    id="machine"
-                    name="machine"
-                    value={formData.machine}
-                    onChange={handleInputChange}
+                    id="machineId" name="machineId"
+                    value={form.machineId}
+                    onChange={e => setForm(p => ({ ...p, machineId: e.target.value }))}
                     required
                   >
                     <option value="">Choose a machine</option>
-                    {availableMachines.map((machine) => (
-                      <option key={machine.id} value={machine.id}>
-                        {machine.name} ({machine.id}) - {machine.status}
+                    {availableMachines.map(m => (
+                      <option key={m._id} value={m._id}>
+                        {m.name} ({m.machineId}) — {m.status}
                       </option>
                     ))}
                   </select>
                 </div>
-
-                <div className="form-group">
-                  <label htmlFor="party">Party Name *</label>
-                  <input
-                    type="text"
-                    id="party"
-                    name="party"
-                    value={formData.party}
-                    onChange={handleInputChange}
-                    placeholder="e.g., LUX, Modenik, JG"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="color">Color *</label>
-                  <input
-                    type="text"
-                    id="color"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Navy Blue, Olive"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="lotNo">Lot Number *</label>
-                  <input
-                    type="text"
-                    id="lotNo"
-                    name="lotNo"
-                    value={formData.lotNo}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 2384/2385"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="quantity">Quantity (kg) *</label>
-                  <input
-                    type="number"
-                    id="quantity"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 450"
-                    min="1"
-                    required
-                  />
-                </div>
-
+                {[
+                  ['party', 'Party Name *', 'text', 'e.g., LUX, Modenik'],
+                  ['color', 'Color *', 'text', 'e.g., Navy Blue, Olive'],
+                  ['lotNo', 'Lot Number *', 'text', 'e.g., 2384/2385'],
+                  ['quantity', 'Quantity (kg) *', 'number', 'e.g., 450'],
+                  ['expectedDuration', 'Expected Duration (hrs) *', 'number', 'e.g., 6'],
+                ].map(([name, label, type, placeholder]) => (
+                  <div className="form-group" key={name}>
+                    <label htmlFor={name}>{label}</label>
+                    <input
+                      id={name} name={name} type={type}
+                      placeholder={placeholder}
+                      value={form[name]}
+                      onChange={e => setForm(p => ({ ...p, [name]: e.target.value }))}
+                      required min={type === 'number' ? 1 : undefined}
+                    />
+                  </div>
+                ))}
                 <div className="form-group">
                   <label htmlFor="stage">Starting Stage *</label>
                   <select
-                    id="stage"
-                    name="stage"
-                    value={formData.stage}
-                    onChange={handleInputChange}
+                    id="stage" name="stage"
+                    value={form.stage}
+                    onChange={e => setForm(p => ({ ...p, stage: e.target.value }))}
                     required
                   >
-                    <option value="TD Load">TD Load</option>
-                    <option value="Dyeing">Dyeing</option>
-                    <option value="Soap Run">Soap Run</option>
-                    <option value="Soap Steam">Soap Steam</option>
-                    <option value="Unload">Unload</option>
+                    {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
-
-                <div className="form-group">
-                  <label htmlFor="expectedDuration">Expected Duration (hours) *</label>
-                  <input
-                    type="number"
-                    id="expectedDuration"
-                    name="expectedDuration"
-                    value={formData.expectedDuration}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 6"
-                    min="1"
-                    step="0.5"
-                    required
-                  />
-                </div>
               </div>
-
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn-cancel"
-                  onClick={() => setShowAddJobModal(false)}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn-submit">
-                  Add Job
-                </button>
+                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn-submit">Add Job</button>
               </div>
             </form>
           </div>

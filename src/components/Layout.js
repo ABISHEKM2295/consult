@@ -1,45 +1,76 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Settings, FlaskConical, Palette, ChevronLeft, Bell, User, Search, Calendar, History, LogOut, BookOpen, TrendingUp, Target } from 'lucide-react';
+import {
+  LayoutDashboard, Settings, FlaskConical, ChevronLeft, Bell, User, Search,
+  Calendar, History, LogOut, BookOpen, BarChart3, Shield, Users,
+  ClipboardList, Package2, Microscope
+} from 'lucide-react';
+import { api } from '../api';
 import './Layout.css';
 
 const Layout = ({ children, onLogout }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [unreadCount, setUnreadCount]   = useState(0);
   const userMenuRef = useRef(null);
 
-  // Close user menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+    const handler = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target))
         setShowUserMenu(false);
-      }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const fetchUnread = useCallback(async () => {
+    try {
+      const alerts = await api.getAlerts({ read: false });
+      setUnreadCount(alerts.length);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    fetchUnread();
+    const iv = setInterval(fetchUnread, 60000);
+    return () => clearInterval(iv);
+  }, [fetchUnread]);
 
   const handleLogout = () => {
     setShowUserMenu(false);
-    if (onLogout) {
-      onLogout();
-    }
+    if (onLogout) onLogout();
   };
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Settings, label: 'Machine Data', path: '/machine-data' },
-    { icon: FlaskConical, label: 'Dyes & Chemicals', path: '/dyes-chemicals' },
-    { icon: Palette, label: 'Color Inspection', path: '/color-inspection' },
-    { icon: BookOpen, label: 'Color Recipes', path: '/color-recipes' },
-    { icon: TrendingUp, label: 'Quality Reports', path: '/quality-reports' },
-    { icon: Target, label: 'Standards Tracking', path: '/standards-tracking' },
-    { icon: Calendar, label: 'Production Schedule', path: '/production-schedule' },
-    { icon: Bell, label: 'Alerts', path: '/alerts' },
-    { icon: History, label: 'Batch History', path: '/batch-history' }
+  /*
+   * Navigation follows the real production lifecycle:
+   * Dashboard → Orders → Lab Dip → Recipes → Schedule → Machine → Dyes
+   *           → (QC) Color Inspection → Quality Reports → Standards
+   *           → (Mgmt) Batch History → Alerts → Client Portal
+   *
+   * { section } entries render as divider labels.
+   */
+  const NAV = [
+    { icon: LayoutDashboard, label: 'Dashboard',       path: '/' },
+
+    { section: 'PRODUCTION FLOW' },
+    { icon: ClipboardList,   label: 'Orders',          path: '/orders' },
+    { icon: FlaskConical,    label: 'Lab Dip',         path: '/lab-dip' },
+    { icon: BookOpen,        label: 'Color Recipes',   path: '/color-recipes' },
+    { icon: Calendar,        label: 'Prod. Schedule',  path: '/production-schedule' },
+    { icon: Settings,        label: 'Machine Data',    path: '/machine-data' },
+    { icon: Package2,        label: 'Dyes & Chemicals',path: '/dyes-chemicals' },
+
+    { section: 'QUALITY CONTROL' },
+    { icon: Microscope,      label: 'Color Inspection',path: '/color-inspection' },
+    { icon: BarChart3,       label: 'Quality Reports', path: '/quality-reports' },
+    { icon: Shield,          label: 'Standards',       path: '/standards-tracking' },
+
+    { section: 'MANAGEMENT' },
+    { icon: History,         label: 'Batch History',   path: '/batch-history' },
+    { icon: Bell,            label: 'Alerts',          path: '/alerts', badge: true },
+    { icon: Users,           label: 'Client Portal',   path: '/client-portal' },
   ];
 
   return (
@@ -52,27 +83,39 @@ const Layout = ({ children, onLogout }) => {
         </div>
 
         <nav className="sidebar-nav">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+          {NAV.map((item, idx) => {
+            /* ── section divider ── */
+            if (item.section) {
+              return isSidebarCollapsed
+                ? <div key={`s${idx}`} className="nav-divider-collapsed" />
+                : <div key={`s${idx}`} className="nav-section-label">{item.section}</div>;
+            }
+
+            const Icon     = item.icon;
             const isActive = location.pathname === item.path;
-            
+
             return (
               <button
                 key={item.path}
                 className={`nav-item ${isActive ? 'active' : ''}`}
                 onClick={() => navigate(item.path)}
-                title={item.label}
+                title={isSidebarCollapsed ? item.label : undefined}
               >
-                <Icon size={20} />
-                {!isSidebarCollapsed && <span>{item.label}</span>}
+                <span className="nav-icon-wrap">
+                  <Icon size={20} />
+                  {item.badge && unreadCount > 0 && (
+                    <span className="nav-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                  )}
+                </span>
+                {!isSidebarCollapsed && <span className="nav-label">{item.label}</span>}
               </button>
             );
           })}
         </nav>
 
-        <button 
+        <button
           className="sidebar-toggle"
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onClick={() => setIsSidebarCollapsed(c => !c)}
         >
           <ChevronLeft size={20} className={isSidebarCollapsed ? 'rotated' : ''} />
         </button>
@@ -81,37 +124,32 @@ const Layout = ({ children, onLogout }) => {
       <main className="main-content">
         <header className="top-header">
           <div className="search-bar">
-            <Search size={20} />
-            <input type="text" placeholder="Search..." />
+            <Search size={18} />
+            <input type="text" placeholder="Search orders, batches, colors, lot numbers…" />
           </div>
-          
           <div className="header-actions">
-            <button className="icon-button" onClick={() => navigate('/alerts')}>
+            <button className="icon-button" onClick={() => { navigate('/alerts'); fetchUnread(); }}>
               <Bell size={20} />
-              <span className="notification-badge">4</span>
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
             </button>
             <div className="user-menu-container" ref={userMenuRef}>
-              <button 
-                className="icon-button user-button"
-                onClick={() => setShowUserMenu(!showUserMenu)}
-              >
+              <button className="icon-button user-button" onClick={() => setShowUserMenu(v => !v)}>
                 <User size={20} />
               </button>
               {showUserMenu && (
                 <div className="user-dropdown">
                   <div className="user-info">
-                    <div className="user-avatar">
-                      <User size={20} />
-                    </div>
+                    <div className="user-avatar"><User size={20} /></div>
                     <div className="user-details">
                       <div className="user-name">Administrator</div>
                       <div className="user-role">System Admin</div>
                     </div>
                   </div>
-                  <div className="dropdown-divider"></div>
+                  <div className="dropdown-divider" />
                   <button className="dropdown-item logout-item" onClick={handleLogout}>
-                    <LogOut size={18} />
-                    <span>Logout</span>
+                    <LogOut size={18} /><span>Logout</span>
                   </button>
                 </div>
               )}
@@ -119,9 +157,7 @@ const Layout = ({ children, onLogout }) => {
           </div>
         </header>
 
-        <div className="content">
-          {children}
-        </div>
+        <div className="content">{children}</div>
       </main>
     </div>
   );

@@ -1,324 +1,148 @@
-.color-inspection {
-  animation: fadeIn 0.3s ease-in;
-}
+/* ── Color Inspection Page ───────────────────────────────────── */
+.color-inspection { animation: fadeIn 0.3s ease; }
 
+.guide-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px; background: #f1f5f9; border: 1px solid #e2e8f0;
+  border-radius: 8px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer;
+}
+.guide-btn:hover { background: #e2e8f0; }
 .new-inspection-button {
-  background: #1e3a5f;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: background 0.2s;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 18px; background: #1e3a5f; color: #fff;
+  border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
 }
+.new-inspection-button:hover { background: #2d5080; }
 
-.new-inspection-button:hover {
-  background: #2c4d6f;
+/* ── ΔE Grade Guide ──────────────────────────────────────────── */
+.grade-guide {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 18px 22px; margin-bottom: 20px;
 }
+.grade-guide h3 { margin: 0 0 6px; font-size: 16px; color: #1e3a5f; }
+.guide-intro { font-size: 13px; color: #374151; margin: 0 0 14px; line-height: 1.6; }
+.grade-guide-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.grade-guide-row {
+  display: grid; grid-template-columns: 70px 100px 150px 1fr;
+  align-items: center; gap: 12px; padding: 8px 14px; border-radius: 8px; border-left: 4px solid;
+}
+.gg-grade  { font-size: 13px; font-weight: 800; }
+.gg-range  { font-size: 12px; color: #6b7280; font-family: monospace; }
+.gg-text   { font-size: 12px; font-weight: 700; }
+.gg-desc   { font-size: 11px; color: #6b7280; }
 
+.guide-tol { background: #fff; border-radius: 10px; padding: 12px 16px; border: 1px solid #e5e7eb; }
+.guide-tol strong { font-size: 13px; color: #374151; display: block; margin-bottom: 10px; }
+.tol-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.tol-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.tol-client { font-size: 13px; font-weight: 700; color: #1e3a5f; }
+.tol-tier   { font-size: 11px; color: #6b7280; }
+.tol-limit  { font-size: 12px; font-weight: 700; color: #374151; }
+
+/* ── KPI Cards ───────────────────────────────────────────────── */
 .inspection-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px; margin-bottom: 20px;
 }
-
 .stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #fff; border-radius: 12px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
-
 .stat-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.stat-label  { margin: 0; font-size: 11px; color: #64748b; white-space: nowrap; }
+.stat-number { margin: 3px 0 0; font-size: 22px; font-weight: 800; }
 
-.stat-icon-wrapper.blue {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
-
-.stat-icon-wrapper.green {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.stat-icon-wrapper.purple {
-  background: linear-gradient(135deg, #a855f7, #9333ea);
-}
-
-.stat-icon-wrapper.orange {
-  background: linear-gradient(135deg, #ff9500, #f59e0b);
-}
-
-.delta-symbol {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.stat-details {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin-bottom: 0.25rem;
-}
-
-.stat-number {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.inspection-content {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 1.5rem;
-}
-
+/* ── Content Grid ────────────────────────────────────────────── */
+.inspection-content { display: grid; grid-template-columns: 340px 1fr; gap: 18px; }
 .chart-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: #fff; border-radius: 14px; padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
+.section-title { margin: 0 0 3px; font-size: 15px; font-weight: 700; color: #1e3a5f; }
+.section-sub   { margin: 0 0 14px; font-size: 12px; color: #9ca3af; }
 
-.section-title {
-  font-size: 1.125rem;
-  color: #1e293b;
-  margin-bottom: 1.5rem;
-}
+/* Grade legend */
+.grade-legend { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.gl-item  { display: flex; align-items: center; gap: 8px; }
+.gl-dot   { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.gl-grade { font-size: 11px; font-weight: 800; min-width: 60px; }
+.gl-text  { font-size: 11px; color: #374151; }
 
-.table-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.filter-tabs {
-  display: flex;
-  gap: 0.5rem;
-}
-
+/* ── Table Card ──────────────────────────────────────────────── */
+.table-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+.table-header { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; display:flex; flex-direction:column; gap:10px; }
+.filter-tabs  { display: flex; gap: 6px; flex-wrap: wrap; }
 .filter-tab {
-  padding: 0.5rem 1rem;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s;
+  padding: 6px 12px; border-radius: 8px; border: 1px solid #e5e7eb;
+  background: #f8fafc; color: #374151; font-size: 12px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all .15s;
 }
+.filter-tab.active { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+.tab-count { font-size: 10px; background: #ffffff33; padding: 1px 5px; border-radius: 99px; }
+.filter-tab:not(.active) .tab-count { background: #e5e7eb; color: #374151; }
 
-.filter-tab:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-.filter-tab.active {
-  background: #1e3a5f;
-  color: white;
-}
-
+.table-toolbar { display: flex; gap: 8px; align-items: center; }
 .search-input {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #f5f7fa;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  min-width: 250px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border: 1px solid #e5e7eb; border-radius: 8px;
+  background: #fff; flex: 1;
+}
+.search-input input { border: none; outline: none; font-size: 13px; width: 100%; }
+.client-filter { padding: 7px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; background: #fff; cursor: pointer; }
+
+.table-container { overflow-x: auto; }
+.inspection-table { width: 100%; border-collapse: collapse; }
+.inspection-table thead tr { background: #f8fafc; }
+.inspection-table th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+.inspection-table td { padding: 11px 14px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
+.ci-row:hover { background: #fafafa; }
+.ci-row-rejected { background: #fff5f5 !important; }
+.ci-row-marginal { background: #fffdf0 !important; }
+
+/* ── ΔE Gauge in cells ───────────────────────────────────────── */
+.ci-no-data { color: #d1d5db; font-size: 13px; }
+.de-gauge-wrap { min-width: 140px; }
+.de-gauge-bar {
+  height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; position: relative;
+  margin-bottom: 5px;
+}
+.de-gauge-fill { height: 100%; border-radius: 99px; transition: width .3s ease; }
+.de-gauge-pointer {
+  position: absolute; top: -3px; width: 2px; height: 12px;
+  background: #1e3a5f; transform: translateX(-50%); border-radius: 1px;
+}
+.de-gauge-row { display: flex; align-items: center; gap: 7px; }
+.de-value { font-size: 14px; font-weight: 800; font-family: monospace; }
+.de-grade-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+
+/* ── Tolerance result chip ───────────────────────────────────── */
+.tol-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 10px; border-radius: 8px; border: 1.5px solid; white-space: nowrap;
+}
+.tol-chip span { font-size: 12px; }
+.tol-detail { font-size: 10px; color: #9ca3af; }
+
+/* Other cells */
+.date-cell   { font-size: 12px; color: #6b7280; white-space: nowrap; }
+.lot-cell    { font-family: monospace; font-size: 12px; color: #374151; }
+.color-cell  { white-space: nowrap; }
+.color-indicator { display: flex; align-items: center; gap: 8px; }
+.color-dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; }
+.client-badge {
+  background: #eff6ff; color: #1e40af; font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 6px;
 }
 
-.search-input input {
-  border: none;
-  background: none;
-  outline: none;
-  flex: 1;
-  font-size: 0.875rem;
-}
+/* Animations */
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
-.search-input input::placeholder {
-  color: #9ca3af;
-}
-
-.table-container {
-  overflow-x: auto;
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.inspection-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.inspection-table thead {
-  background: #f8fafc;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.inspection-table th {
-  padding: 0.875rem 1rem;
-  text-align: left;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.inspection-table tbody tr {
-  border-bottom: 1px solid #f1f5f9;
-  transition: background 0.2s;
-}
-
-.inspection-table tbody tr:hover {
-  background: #f8fafc;
-}
-
-.inspection-table td {
-  padding: 1rem;
-  font-size: 0.875rem;
-  color: #1e293b;
-}
-
-.date-cell {
-  color: #64748b;
-  white-space: nowrap;
-}
-
-.color-cell {
-  font-weight: 500;
-}
-
-.color-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1e3a5f, #3b82f6);
-  border: 2px solid #e5e7eb;
-}
-
-.lot-cell {
-  font-family: 'Courier New', monospace;
-  font-size: 0.8rem;
-}
-
-.delta-value {
-  font-weight: 700;
-  padding: 0.25rem 0.625rem;
-  border-radius: 6px;
-  display: inline-block;
-}
-
-.delta-good {
-  background: #d1fae5;
-  color: #059669;
-}
-
-.delta-warning {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.delta-bad {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.no-data {
-  color: #9ca3af;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.status-approved {
-  background: #d1fae5;
-  color: #059669;
-}
-
-.status-pending {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.status-rejected {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-@media (max-width: 1200px) {
-  .inspection-content {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .inspection-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .table-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .filter-tabs {
-    width: 100%;
-    overflow-x: auto;
-  }
-  
-  .search-input {
-    width: 100%;
-  }
-  
-  .inspection-table {
-    font-size: 0.8rem;
-  }
-}
+/* Responsive */
+@media(max-width:1100px) { .inspection-content { grid-template-columns: 1fr; } }
+@media(max-width:900px)  { .inspection-stats { grid-template-columns: repeat(3,1fr); } }
+@media(max-width:600px)  { .inspection-stats { grid-template-columns: repeat(2,1fr); } .grade-guide-row { grid-template-columns: 1fr 1fr; } }

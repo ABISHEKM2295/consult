@@ -9,13 +9,7 @@ const Machine = require('./models/Machine');
 const Inspection = require('./models/Inspection');
 const Alert = require('./models/Alert');
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Connected'))
-    .catch((err) => {
-        console.error('❌ MongoDB Connection Error:', err);
-        process.exit(1);
-    });
+// We'll connect inside the seedDatabase async function to ensure order
 
 // Sample data
 const machines = [
@@ -169,24 +163,39 @@ const baseBatches = [
     }
 ];
 
-const generatedBatches = Array.from({ length: 20 }, (_, index) => {
+const generatedBatches = Array.from({ length: 180 }, (_, index) => {
     const machinesList = ['SF-01', 'SF-02', 'SF-03', 'SF-04', 'SF-05', 'SF-07'];
-    const partiesList = ['LUX', 'Modenik', 'JG', 'Nexa', 'Orbit'];
-    const colorsList = ['Navy Blue', 'Olive', 'Petrol Blue', 'Poseidon', 'Air Force', 'C. Brown', 'Sky Blue'];
-    const operatorsList = ['Amir Khan', 'Hassan Ali', 'Rafiq Ahmed', 'Nadeem Farooq', 'Imran Sheikh'];
-    const statuses = ['completed', 'completed', 'in-progress', 'rejected'];
+    const partiesList = ['LUX', 'Modenik', 'JG', 'Nexa', 'Orbit', 'Reliance', 'Arvind'];
+    const colorsList = ['Navy Blue', 'Olive', 'Petrol Blue', 'Poseidon', 'Air Force', 'C. Brown', 'Sky Blue', 'Crimson', 'Teal', 'Mustard'];
+    const operatorsList = ['Amir Khan', 'Hassan Ali', 'Rafiq Ahmed', 'Nadeem Farooq', 'Imran Sheikh', 'Raju Bhai', 'Suresh Kumar'];
+    
+    // 80% completed, 10% in-progress, 10% rejected
+    const statuses = ['completed', 'completed', 'completed', 'completed', 'completed', 'completed', 'completed', 'completed', 'in-progress', 'rejected'];
 
-    const day = 11 + (index % 18);
-    const date = `2025-12-${String(day).padStart(2, '0')}`;
+    // Spread across the last 6 months (July - Dec 2025)
+    // index 0-29 -> July, index 30-59 -> Aug, etc.
+    const monthInt = 7 + Math.floor(index / 30); 
+    const day = 1 + (index % 28);
+    const date = `2025-${String(monthInt).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
     const machine = machinesList[index % machinesList.length];
     const party = partiesList[index % partiesList.length];
     const color = colorsList[index % colorsList.length];
     const operator = operatorsList[index % operatorsList.length];
-    const status = statuses[index % statuses.length];
-    const efficiency = 83 + ((index * 3) % 15);
-    const deltaE = index < 5
-        ? Number((2.5 + (index * 0.1)).toFixed(1))
-        : Number((3.2 + ((index % 7) * 0.25)).toFixed(1));
+    
+    // Status Logic
+    let status = statuses[index % statuses.length];
+    // If it's an old month, make sure it's not "in-progress"
+    if (monthInt < 12 && status === 'in-progress') {
+        status = 'completed'; 
+    }
+
+    const efficiency = 80 + ((index * 7) % 19);
+    
+    // If rejected, deltaE is bad (> 2.0). If completed, usually good (< 2.0)
+    let deltaE = (0.5 + ((index * 3) % 15) * 0.1); 
+    if (status === 'rejected') deltaE += 2.0;
+    deltaE = Number(deltaE.toFixed(1));
 
     return {
         batchId: `BTH-${String(2503 + index).padStart(4, '0')}`,
@@ -195,8 +204,8 @@ const generatedBatches = Array.from({ length: 20 }, (_, index) => {
         party,
         color,
         lotNo: `${13000 + (index * 7)}/${1 + (index % 5)}`,
-        quantity: `${320 + (index * 11)} kg`,
-        duration: `${5 + (index % 4)}h ${15 + ((index * 7) % 45)}m`,
+        quantity: `${250 + (index * 13) % 300} kg`,
+        duration: `${4 + (index % 5)}h ${10 + ((index * 11) % 45)}m`,
         status,
         efficiency,
         deltaE,
@@ -204,7 +213,8 @@ const generatedBatches = Array.from({ length: 20 }, (_, index) => {
         recipe: {
             dyes: [
                 { name: 'BLACK B (SF) Divine', qty: `${(1.2 + ((index % 6) * 0.3)).toFixed(1)}%` },
-                { name: 'BLUE RR (Divine)', qty: `${(0.8 + ((index % 5) * 0.2)).toFixed(1)}%` }
+                { name: 'BLUE RR (Divine)', qty: `${(0.8 + ((index % 5) * 0.2)).toFixed(1)}%` },
+                { name: 'RED W3R (Divine)', qty: `${(0.4 + ((index % 3) * 0.1)).toFixed(1)}%` }
             ],
             chemicals: [
                 { name: 'Wetting Oil - BMW/CFLD', qty: `${(1.5 + ((index % 4) * 0.2)).toFixed(1)}g/l` },
@@ -235,7 +245,7 @@ const extraColorRecipeBatches = Array.from({ length: 15 }, (_, index) => {
     const color = uniqueColors[index];
 
     return {
-        batchId: `BTH-${String(2523 + index).padStart(4, '0')}`,
+        batchId: `BTH-${String(3000 + index).padStart(4, '0')}`,
         date: `2025-11-${String(day).padStart(2, '0')}`,
         machine: machinesList[index % machinesList.length],
         party: partiesList[index % partiesList.length],
@@ -306,6 +316,12 @@ const alerts = [
 async function seedDatabase() {
     try {
         console.log('🌱 Starting database seeding...');
+        
+        // Connect to MongoDB here to ensure connection is established FIRST
+        await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 30000 // give it lots of time for Azure/Atlas connects
+        });
+        console.log('✅ MongoDB Connected');
 
         // Clear existing data
         await Promise.all([
